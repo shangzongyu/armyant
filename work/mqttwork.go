@@ -11,28 +11,30 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package work
 
 import (
 	"fmt"
-	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"net/url"
 	"strings"
 	"sync"
 	_ "time"
-	"net/url"
+
+	MQTT "github.com/eclipse/paho.mqtt.golang"
 )
 
 type MqttWork struct {
-	client        MQTT.Client
-	waiting_queue map[string]func(client MQTT.Client, msg MQTT.Message)
-	lock			*sync.Mutex
-	curr_id       int64
+	client       MQTT.Client
+	waitingQueue map[string]func(client MQTT.Client, msg MQTT.Message)
+	lock         *sync.Mutex
+	currId       int64
 }
 
-func (this *MqttWork) GetDefaultOptions(addrURI string) *MQTT.ClientOptions {
-	this.curr_id = 0
-	this.lock=new(sync.Mutex)
-	this.waiting_queue = make(map[string]func(client MQTT.Client, msg MQTT.Message))
+func (mw *MqttWork) GetDefaultOptions(addrURI string) *MQTT.ClientOptions {
+	mw.currId = 0
+	mw.lock = new(sync.Mutex)
+	mw.waitingQueue = make(map[string]func(client MQTT.Client, msg MQTT.Message))
 	opts := MQTT.NewClientOptions()
 	opts.AddBroker(addrURI)
 	opts.SetClientID("1")
@@ -43,38 +45,38 @@ func (this *MqttWork) GetDefaultOptions(addrURI string) *MQTT.ClientOptions {
 	opts.SetAutoReconnect(false)
 	opts.SetDefaultPublishHandler(func(client MQTT.Client, msg MQTT.Message) {
 		//收到消息
-		this.lock.Lock()
-		if callback, ok := this.waiting_queue[msg.Topic()]; ok {
+		mw.lock.Lock()
+		if callback, ok := mw.waitingQueue[msg.Topic()]; ok {
 			//有等待消息的callback 还缺一个信息超时的处理机制
 			_, err := url.Parse(msg.Topic())
-			if err!=nil{
+			if err != nil {
 				ts := strings.Split(msg.Topic(), "/")
 				if len(ts) > 2 {
 					//这个topic存在msgid 那么这个回调只使用一次
-					delete(this.waiting_queue, msg.Topic())
+					delete(mw.waitingQueue, msg.Topic())
 				}
 			}
 			go callback(client, msg)
 		}
-		this.lock.Unlock()
+		mw.lock.Unlock()
 	})
 	return opts
 }
-func (this *MqttWork) Connect(opts *MQTT.ClientOptions) error {
+func (mw *MqttWork) Connect(opts *MQTT.ClientOptions) error {
 	//fmt.Println("Connect...")
-	this.client = MQTT.NewClient(opts)
-	if token := this.client.Connect(); token.Wait() && token.Error() != nil {
+	mw.client = MQTT.NewClient(opts)
+	if token := mw.client.Connect(); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
 	return nil
 }
 
-func (this *MqttWork) GetClient() MQTT.Client {
-	return this.client
+func (mw *MqttWork) GetClient() MQTT.Client {
+	return mw.client
 }
 
-func (this *MqttWork) Finish() {
-	this.client.Disconnect(250)
+func (mw *MqttWork) Finish() {
+	mw.client.Disconnect(250)
 }
 
 /**
@@ -83,14 +85,14 @@ func (this *MqttWork) Finish() {
  * @param msg
  * @param callback
  */
-func (this *MqttWork) Request(topic string, body []byte) (MQTT.Message, error) {
-	this.curr_id = this.curr_id + 1
-	topic = fmt.Sprintf("%s/%d", topic, this.curr_id) //给topic加一个msgid 这样服务器就会返回这次请求的结果,否则服务器不会返回结果
+func (mw *MqttWork) Request(topic string, body []byte) (MQTT.Message, error) {
+	mw.currId = mw.currId + 1
+	topic = fmt.Sprintf("%s/%d", topic, mw.currId) //给topic加一个msgid 这样服务器就会返回这次请求的结果,否则服务器不会返回结果
 	result := make(chan MQTT.Message)
-	this.On(topic, func(client MQTT.Client, msg MQTT.Message) {
+	mw.On(topic, func(client MQTT.Client, msg MQTT.Message) {
 		result <- msg
 	})
-	this.GetClient().Publish(topic, 0, false, body)
+	mw.GetClient().Publish(topic, 0, false, body)
 	msg, ok := <-result
 	if !ok {
 		return nil, fmt.Errorf("client closed")
@@ -104,17 +106,17 @@ func (this *MqttWork) Request(topic string, body []byte) (MQTT.Message, error) {
  * @param msg
  * @param callback
  */
-func (this *MqttWork) RequestURI(u *url.URL, body []byte) (MQTT.Message, error) {
-	this.curr_id = this.curr_id + 1
-	v:=u.Query()
-	v.Add("msg_id",fmt.Sprintf("%v",this.curr_id))	//给topic加一个msgid 这样服务器就会返回这次请求的结果,否则服务器不会返回结果
-	u.RawQuery=v.Encode()
+func (mw *MqttWork) RequestURI(u *url.URL, body []byte) (MQTT.Message, error) {
+	mw.currId = mw.currId + 1
+	v := u.Query()
+	v.Add("msg_id", fmt.Sprintf("%v", mw.currId)) //给topic加一个msgid 这样服务器就会返回这次请求的结果,否则服务器不会返回结果
+	u.RawQuery = v.Encode()
 	topic := u.String()
 	result := make(chan MQTT.Message)
-	this.On(topic, func(client MQTT.Client, msg MQTT.Message) {
+	mw.On(topic, func(client MQTT.Client, msg MQTT.Message) {
 		result <- msg
 	})
-	this.GetClient().Publish(topic, 0, false, body)
+	mw.GetClient().Publish(topic, 0, false, body)
 	msg, ok := <-result
 	if !ok {
 		return nil, fmt.Errorf("client closed")
@@ -128,12 +130,12 @@ func (this *MqttWork) RequestURI(u *url.URL, body []byte) (MQTT.Message, error) 
  * @param msg
  * @param callback
  */
-func (this *MqttWork) RequestURINR(url *url.URL, body []byte) {
-	this.curr_id = this.curr_id + 1
-	v:=url.Query()
-	url.RawQuery=v.Encode()
+func (mw *MqttWork) RequestURINR(url *url.URL, body []byte) {
+	mw.currId = mw.currId + 1
+	v := url.Query()
+	url.RawQuery = v.Encode()
 	topic := url.String()
-	this.GetClient().Publish(topic, 0, false, body)
+	mw.GetClient().Publish(topic, 0, false, body)
 }
 
 /**
@@ -141,8 +143,8 @@ func (this *MqttWork) RequestURINR(url *url.URL, body []byte) {
  * @param topic
  * @param msg
  */
-func (this *MqttWork) RequestNR(topic string, body []byte) {
-	this.GetClient().Publish(topic, 0, false, body)
+func (mw *MqttWork) RequestNR(topic string, body []byte) {
+	mw.GetClient().Publish(topic, 0, false, body)
 }
 
 /**
@@ -150,9 +152,9 @@ func (this *MqttWork) RequestNR(topic string, body []byte) {
  * @param topic
  * @param callback
  */
-func (this *MqttWork) On(topic string, callback func(client MQTT.Client, msg MQTT.Message)) {
+func (mw *MqttWork) On(topic string, callback func(client MQTT.Client, msg MQTT.Message)) {
 	////服务器不会返回结果
-	this.lock.Lock()
-	this.waiting_queue[topic] = callback //添加这条消息到等待队列
-	this.lock.Unlock()
+	mw.lock.Lock()
+	mw.waitingQueue[topic] = callback //添加这条消息到等待队列
+	mw.lock.Unlock()
 }

@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,28 +15,26 @@ package main
 
 import (
 	"fmt"
-	"github.com/liangdas/armyant/http_task"
-	"github.com/liangdas/armyant/task"
 	"os"
 	"os/signal"
+
+	"github.com/shangzongyu/armyant/http_task"
+	"github.com/shangzongyu/armyant/task"
 )
 
 func main() {
-
-	task := task.LoopTask{
-		C: 30, //并发数
-	}
-	manager := http_task.NewManager(task)
+	loopTask := task.NewLoopTask(4)
+	manager := http_task.NewManager(loopTask)
 	fmt.Println("开始压测请等待")
 	c := make(chan os.Signal, 1)
 	go func() {
-		task.Run(manager)
+		loopTask.Run(manager)
 	}()
 	signal.Notify(c, os.Interrupt)
 	signal.Notify(c, os.Kill)
 	<-c
 	fmt.Println("准备停止")
-	task.Stop()
-	task.Wait()
+	loopTask.Stop()
+	loopTask.Wait()
 	fmt.Println("压测完成")
 }

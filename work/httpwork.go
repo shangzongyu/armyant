@@ -11,6 +11,7 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package work
 
 import (
@@ -130,9 +131,9 @@ func (this *HttpWork) MakeRequest(client *http.Client, req *http.Request) *Resul
 		result.ContentLength = resp.ContentLength
 		result.StatusCode = resp.StatusCode
 		//io.Copy(ioutil.Discard, resp.Body)
-		result.Body,err=ioutil.ReadAll(resp.Body)
+		result.Body, err = ioutil.ReadAll(resp.Body)
 		resp.Body.Close()
-	}else{
+	} else {
 		result.Err = err
 	}
 	t := time.Now()

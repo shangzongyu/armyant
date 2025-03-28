@@ -11,33 +11,34 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package main
 
 import (
-	"fmt"
-	"github.com/liangdas/armyant/mqtt_task"
-	"github.com/liangdas/armyant/task"
-	"os"
-	"os/signal"
+    "fmt"
+    "os"
+    "os/signal"
+
+    "github.com/shangzongyu/armyant/mqtt_task"
+    "github.com/shangzongyu/armyant/task"
 )
 
 func main() {
+    loopTask := task.NewLoopTask(10)
+    manager := mqtt_task.NewManager(loopTask)
+    fmt.Println("开始压测请等待")
+    c := make(chan os.Signal, 1)
+    go func() {
+        loopTask.Run(manager)
+        //c<-os.Interrupt
+    }()
 
-	task := task.LoopTask{
-		C: 10, //并发数
-	}
-	manager := mqtt_task.NewManager(task)
-	fmt.Println("开始压测请等待")
-	c := make(chan os.Signal, 1)
-	go func() {
-		task.Run(manager)
-		//c<-os.Interrupt
-	}()
-	signal.Notify(c, os.Interrupt)
-	signal.Notify(c, os.Kill)
-	<-c
-	fmt.Println("准备停止")
-	task.Stop()
-	task.Wait()
-	fmt.Println("压测完成")
+    signal.Notify(c, os.Interrupt)
+    signal.Notify(c, os.Kill)
+    <-c
+
+    fmt.Println("准备停止")
+    loopTask.Stop()
+    loopTask.Wait()
+    fmt.Println("压测完成")
 }

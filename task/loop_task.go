@@ -11,17 +11,19 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package task
 
 import (
-	"github.com/liangdas/armyant/utils"
 	"sync"
 	"time"
+
+	"github.com/shangzongyu/armyant/utils"
 )
 
 type LoopTask struct {
 	// C is the concurrency level, the number of concurrent workers to run.
-	C int
+	c int
 
 	Start time.Time
 
@@ -52,12 +54,14 @@ func (b *LoopTask) Stop() {
 	}
 
 }
+
 func (b *LoopTask) Wait() {
 	b.wg.Wait()
 }
+
 func (b *LoopTask) runWorkers(manager WorkManager) {
-	b.wg.Add(b.C)
-	for i := 0; i < b.C; i++ {
+	b.wg.Add(b.c)
+	for i := 0; i < b.c; i++ {
 		task := manager.CreateWork()
 		b.q.Push(task)
 		go func() {
@@ -66,5 +70,10 @@ func (b *LoopTask) runWorkers(manager WorkManager) {
 			b.wg.Done()
 		}()
 	}
+}
 
+func NewLoopTask(count int64) *LoopTask {
+	return &LoopTask{
+		c: 100,
+	}
 }

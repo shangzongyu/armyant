@@ -1,17 +1,20 @@
 # armyant(行军蚁)
-[mqant](https://github.com/liangdas/mqant)压力测试工具
-# 简介
+
+[mqant](https://github.com/shangzongyu/mqant)压力测试工具
+
+## 简介
+
 armyant是从http压力测试工具[hey](https://github.com/rakyll/hey)改装而成。
 
 hey只支持http接口的压力测试而armant可以自定义压测协议。
 
 目前默认实现了http，mqtt两种协议的压力测试工具
 
-# 依赖模块
+## 依赖模块
 
     go get github.com/eclipse/paho.mqtt.golang
 
-# 使用方法
+## 使用方法
 
 > armyant无命令行工具,目前需要通过源码编译执行
 
@@ -27,7 +30,6 @@ hey只支持http接口的压力测试而armant可以自定义压测协议。
 
 具体实现 mqtt_task/work.go
 
-
 可以通过修改work.go代码来灵活更改具体的压测内容
 
 ### 操作系统最多文件打开限制
@@ -37,9 +39,6 @@ hey只支持http接口的压力测试而armant可以自定义压测协议。
 
 #### mac打开限制方式
   http://blog.csdn.net/mingtingjian/article/details/77675761
-
-#### linux打开方式
-  自己百度
 
 #### paho.mqtt.golang 内存怪兽
 
@@ -56,9 +55,7 @@ gopath/src/github.com/eclipse/paho.mqtt.golang/messageids.go
 
 messageids.go 文件也需要做对应修改
 
-
-
-#### mqant的压测参数
+#### mqant 的压测参数
 
 系统硬件:
 

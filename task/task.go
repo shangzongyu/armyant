@@ -11,19 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package task
 
-import ()
-
 type WorkManager interface {
-	CreateWork() Work
-	Finish(task Task)
+    CreateWork() Work
+    Finish(task Task)
 }
 
 type Work interface {
-	Init(task Task)
-	RunWorker(task Task)
-	Close(task Task)
+    Init(task Task)
+    RunWorker(task Task)
+    Close(task Task)
 }
 type Task interface {
 }

@@ -11,16 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package http_task
 
 import (
-	"github.com/liangdas/armyant/task"
-	"github.com/liangdas/armyant/work"
 	"io"
 	"os"
+
+	"github.com/shangzongyu/armyant/task"
+	"github.com/shangzongyu/armyant/work"
 )
 
-// Run makes all the requests, prints the summary. It blocks until
+// NewManager Run makes all the requests, prints the summary. It blocks until
 // all work is done.
 func NewManager(t task.Task) task.WorkManager {
 	// append hey's user agent
@@ -35,18 +37,20 @@ type Manager struct {
 	Writer io.Writer
 }
 
-func (this *Manager) writer() io.Writer {
-	if this.Writer == nil {
+func (m *Manager) writer() io.Writer {
+	if m.Writer == nil {
 		return os.Stdout
 	}
-	return this.Writer
+	return m.Writer
 }
-func (this *Manager) Finish(task task.Task) {
-	close(this.results)
+
+func (m *Manager) Finish(task task.Task) {
+	close(m.results)
 	//total := time.Now().Sub(task.Start)
-	//work.NewReport(this.writer(), task.N, this.results, "", total).Finalize()
+	//work.NewReport(m.writer(), task.N, m.results, "", total).Finalize()
 }
-func (this *Manager) CreateWork() task.Work {
+
+func (m *Manager) CreateWork() task.Work {
 	w := new(Work)
 	w.H2 = false
 	w.Timeout = 20
@@ -54,6 +58,6 @@ func (this *Manager) CreateWork() task.Work {
 	w.DisableCompression = false
 	w.DisableKeepAlives = false
 	w.DisableRedirects = false
-	w.manager = this
+	w.manager = m
 	return w
 }

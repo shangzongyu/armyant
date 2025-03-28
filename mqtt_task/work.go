@@ -11,14 +11,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package mqtt_task
 
 import (
 	"fmt"
-	MQTT "github.com/eclipse/paho.mqtt.golang"
-	"github.com/liangdas/armyant/task"
-	"github.com/liangdas/armyant/work"
 	"time"
+
+	MQTT "github.com/eclipse/paho.mqtt.golang"
+	"github.com/shangzongyu/armyant/task"
+	"github.com/shangzongyu/armyant/work"
 )
 
 func NewWork(manager *Manager) *Work {
@@ -41,7 +43,8 @@ func NewWork(manager *Manager) *Work {
 	return this
 }
 
-/**
+/*
+*
 Work 代表一个协程内具体执行任务工作者
 */
 type Work struct {
@@ -56,12 +59,13 @@ func (this *Work) Init(t task.Task) {
 	this.closeSig = false
 }
 
-/**
+/*
+*
 每一次请求都会调用该函数,在该函数内实现具体请求操作
 
-task:=task.LoopTask{
-		C:100,		//并发数
-}
+	task:=task.LoopTask{
+			C:100,		//并发数
+	}
 */
 func (this *Work) RunWorker(t task.Task) {
 	for !this.closeSig {
